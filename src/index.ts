@@ -43,6 +43,28 @@ io.use((socket: AppServerSocket, next) => {
 	next();
 })
 
+interface SessionSocket {socket: AppServerSocket, roomcode: string}
+const SessionSocketRecord = new Map<string, SessionSocket>();
+
+io.on('connection', (socket: AppServerSocket) => {
+	const session = socket.request.session as SessionData;
+
+	console.log(`userid ${session.id}//${socket.id} is connected`);
+
+	if (SessionSocketRecord.has(session.id)) {
+		const {socket: otherSocket} = SessionSocketRecord.get(session.id) as SessionSocket;
+		otherSocket.disconnect();
+		console.log(`disconnected: ${session.id}//${otherSocket.id}`)
+	}
+	SessionSocketRecord.set(session.id, {socket, roomcode: session.roomcode});
+
+	socket.on('hello', data => {
+		console.log(`${session.id}//${socket.id}: hello!`);
+		socket.emit('replyhello');
+	})
+
+})
+
 server.listen(PORT, () => {
 	console.log(`Server is running at localhost:${PORT}`);
 })
