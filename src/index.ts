@@ -4,8 +4,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import jwt from 'jsonwebtoken'
 import { Server as SocketServer, Socket } from 'socket.io'
-import { Handshake } from 'socket.io/dist/socket'
-import { ErrorCode } from './lib/types'
+import { AppServerSocket, ErrorCode, SessionData } from './lib/types'
 
 dotenv.config();
 
@@ -23,22 +22,6 @@ const io = new SocketServer(server, {
 		methods: ['GET', 'POST']
 	}
 });
-
-interface AppServerSocket extends Socket {
-	handshake: Handshake & {
-		auth: {
-			token?: string
-		}
-	},
-	request: IncomingMessage & {
-		session?: SessionData
-	}
-}
-
-interface SessionData {
-	id: string,
-	roomcode: string
-}
 
 io.use((socket: AppServerSocket, next) => {
 	const { token } = socket.handshake.auth;
