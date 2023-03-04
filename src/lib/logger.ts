@@ -12,6 +12,4 @@ export const Log = {
 	api: LoggerFactory('api', 34),
 }
 
-console.clear()
-
 export default Log;
