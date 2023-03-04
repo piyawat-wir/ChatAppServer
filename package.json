@@ -4,7 +4,7 @@
   "description": "",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "npx nodemon --exec ' node --experimental-specifier-resolution=node --loader ts-node/esm ' . "
+    "dev": "npx nodemon --ext ts,json --watch ./src --exec \"node --experimental-specifier-resolution=node --loader ts-node/esm\" . "
   },
   "keywords": [],
   "author": "",
