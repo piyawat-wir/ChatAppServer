@@ -25,7 +25,7 @@ export class User {
 	public get id() { return this.data.id }
 
 	public get name() { return this.data.name }
-	public set name(name: string) { this.data.id = name }
+	public set name(name: string) { this.data.name = name }
 
 	public get profilePicture() { return this.data.profilePicture }
 	public set profilePicture(v: string) { this.data.profilePicture = v }
