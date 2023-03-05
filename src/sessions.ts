@@ -3,20 +3,22 @@ import Log from "./lib/logger";
 import { datetime, SessionCookieData } from "./lib/types";
 
 export class SessionData implements SessionCookieData {
-	public socketid: string
 	public createTime: datetime = Date.now();
 	public online: boolean = false;
 	public id: string;
 	public roomcode: string;
 	public sessionLifetime = 1000 * 60 * 60; //1 hr
 
+	public socket: Socket;
+
 	constructor(socket: Socket, data: SessionCookieData) {
-		this.socketid = socket.id;
+		this.socket = socket;
 		this.id = data.id;
 		this.roomcode = data.roomcode;
 	}
 	public renew() { this.createTime = Date.now() }
 	public get expire() { return Date.now() - this.createTime < this.sessionLifetime }
+	public get socketid() { return this.socket.id }
 }
 
 type userid = SessionCookieData['id']
@@ -59,7 +61,7 @@ export class SessionStore {
 			if (now - this.lastPrune > pruneInterval) {
 				this.prune();
 				this.lastPrune = now;
-				Log.server(`pruned SessionStore @ ${new Date(now).toLocaleString() }`)
+				Log.server(`pruned SessionStore @ ${new Date(now).toLocaleString()}`)
 			}
 
 			await new Promise(resolve => setTimeout(resolve, this.options.pruneInterval));
