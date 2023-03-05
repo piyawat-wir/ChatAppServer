@@ -18,11 +18,14 @@ export interface AppServerSocket extends Socket {
 		}
 	},
 	request: IncomingMessage & {
-		session?: SessionData
+		session?: SessionCookieData,
+
 	}
 }
 
-export interface SessionData {
+export interface SessionCookieData {
 	id: string,
 	roomcode: string
 }
+
+export type datetime = ReturnType<typeof Date.now>
