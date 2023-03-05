@@ -50,19 +50,22 @@ export class SessionStore {
 
 		return session;
 	}
-	public prune() {
+	public prune(beforeDelete?: (id: string) => any) {
 		this.sessions.forEach((session, id) => {
-			if (session.expire) this.delete(id);
+			if (session.expire) {
+				if (beforeDelete) beforeDelete(id);
+				this.delete(id);
+			}
 		});
 	}
 
-	public async startPruneService() {
+	public async startPruneService(beforeDelete?: (id: string) => any) {
 		this.runPruneService = true;
 		const { pruneInterval } = this.options
 		while (this.runPruneService) {
 			const now = Date.now();
 			if (now - this.lastPrune > pruneInterval) {
-				this.prune();
+				this.prune(beforeDelete);
 				this.lastPrune = now;
 				Log.server(`pruned SessionStore @ ${new Date(now).toLocaleString()}`)
 			}
