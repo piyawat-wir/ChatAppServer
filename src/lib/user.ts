@@ -35,12 +35,18 @@ export class User {
 	public getData() { return this.data }
 
 	public join(room: Room) {
-		room.addUser(this);
+		if (this.room) {
+			if (this.room.roomcode !== room.roomcode) this.leave();
+		}
+		if (!room.hasUser(this)) room.addUser(this);
 		this.room = room;
 	}
 	public leave() {
-		this.room?.removeUser(this);
+		if (!this.room) return;
+		const oldRoom = this.room;
 		this.room = null;
+		if (oldRoom.hasUser(this))
+			oldRoom.removeUser(this);
 	}
 	public sendMessage(message: string) {
 		this.room?.sendMessage(this, message);

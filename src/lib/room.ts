@@ -18,7 +18,7 @@ export class Room {
 	private users = new Map<string, User>()
 	private messages: Message[] = [];
 
-	constructor(roomcode: string) { 
+	constructor(roomcode: string) {
 		this.data.roomcode = roomcode;
 	}
 
@@ -30,8 +30,16 @@ export class Room {
 	public get description() { return this.data.description }
 	public set description(desc: string) { this.data.description = desc }
 
-	public addUser(user: User) { this.users.set(user.id, user) }
-	public removeUser(user: User) { this.users.delete(user.id) }
+	public addUser(user: User) {
+		this.users.set(user.id, user);
+		user.join(this);
+	}
+	public removeUser(user: User) {
+		this.users.delete(user.id);
+		user.leave();
+	}
+	public hasUser(user: User) { return this.users.get(user.id) }
+	public getUsers() { return this.users }
 
 	public sendMessage(user: User, message: string) {
 		this.messages.push(new TextMessage(user, message))
