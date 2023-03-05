@@ -6,7 +6,7 @@ import { RequestHandler, Request } from 'express'
 
 export interface AppRequest extends Request {
 	body: {
-		auth?: string
+		auth: string
 		data?: Record<string, any>
 	},
 	session?: SessionCookieData
@@ -36,9 +36,8 @@ export function expressMiddleware(jwt_key: string): RequestHandler {
 
 		try { validateSession({ token, jwt_key, req }) }
 		catch (err) {
-			Log.api.warn(`nope! ${req.socket.remoteAddress}`)
-			res.send('No!')
-			return;
+			req.session = undefined
+			// Log.api.warn(`empty session! ${req.socket.remoteAddress}`)
 		}
 
 		next();
