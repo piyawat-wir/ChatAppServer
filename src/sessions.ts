@@ -9,7 +9,7 @@ export class SessionData implements SessionCookieData {
 	public roomcode: string;
 	public sessionLifetime = 1000 * 60 * 60; //1 hr
 
-	public socket: Socket;
+	private socket: Socket;
 
 	constructor(socket: Socket, data: SessionCookieData) {
 		this.socket = socket;
@@ -19,6 +19,8 @@ export class SessionData implements SessionCookieData {
 	public renew() { this.createTime = Date.now() }
 	public get expire() { return Date.now() - this.createTime < this.sessionLifetime }
 	public get socketid() { return this.socket.id }
+	public getSocket() { return this.socket }
+	public setSocket(socket: Socket) { this.socket = socket }
 }
 
 type userid = SessionCookieData['id']
