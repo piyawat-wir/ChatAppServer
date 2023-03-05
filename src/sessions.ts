@@ -4,7 +4,6 @@ import { datetime, SessionCookieData } from "./lib/types";
 
 export class SessionData implements SessionCookieData {
 	public createTime: datetime = Date.now();
-	public online: boolean = false;
 	public id: string;
 	public roomcode: string;
 	public sessionLifetime = 1000 * 60 * 60; //1 hr
@@ -17,6 +16,7 @@ export class SessionData implements SessionCookieData {
 		this.roomcode = data.roomcode;
 	}
 	public renew() { this.createTime = Date.now() }
+	public get online() { return this.socket.connected }
 	public get expire() { return Date.now() - this.createTime < this.sessionLifetime }
 	public get socketid() { return this.socket.id }
 	public getSocket() { return this.socket }
@@ -39,7 +39,7 @@ export class SessionStore {
 		const session = this.sessions.get(id);
 		if (!session) return;
 
-		const { online, createTime } = session;
+		const { online } = session;
 		const now = Date.now();
 
 		if (online) return session;
