@@ -5,20 +5,18 @@ import { datetime, SessionCookieData } from "./types";
 export class SessionData implements SessionCookieData {
 	public createTime: datetime = Date.now();
 	public id: string;
-	public roomcode: string;
+	public roomcode: string = '';
 	public sessionLifetime = 1000 * 60 * 60; //1 hr
 
-	private socket: Socket;
+	private socket?: Socket;
 
-	constructor(socket: Socket, data: SessionCookieData) {
-		this.socket = socket;
-		this.id = data.id;
-		this.roomcode = data.roomcode;
+	constructor(id: string) {
+		this.id = id
 	}
 	public renew() { this.createTime = Date.now() }
-	public get online() { return this.socket.connected }
-	public get expire() { return Date.now() - this.createTime < this.sessionLifetime }
-	public get socketid() { return this.socket.id }
+	public get online() { return this.socket?.connected || false }
+	public get expire() { return (Date.now() - this.createTime) >= this.sessionLifetime }
+	public get socketid() { return this.socket?.id }
 	public getSocket() { return this.socket }
 	public setSocket(socket: Socket) { this.socket = socket }
 }
@@ -33,21 +31,24 @@ export class SessionStore {
 	private lastPrune: datetime = 0;
 	private runPruneService = false;
 
-	public add(data: SessionData) { this.sessions.set(data.id, data) }
-	public delete(id: userid) { this.sessions.delete(id) }
+	public get data() { return this.sessions }
+
+	public add(data: SessionData) { return this.sessions.set(data.id, data) }
+	public delete(id: userid) { return this.sessions.delete(id) }
+	public has(id: userid) { return this.sessions.has(id) }
 	public get(id: userid) {
 		const session = this.sessions.get(id);
+
 		if (!session) return;
 
-		const { online } = session;
-		const now = Date.now();
+		const { online, expire } = session;
 
-		if (online) return session;
-
-		if (session.expire) {
+		if (expire && !online) {
 			this.delete(session.id);
 			return;
 		}
+
+		return session;
 	}
 	public prune() {
 		this.sessions.forEach((session, id) => {
