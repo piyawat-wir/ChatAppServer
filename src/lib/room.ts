@@ -38,4 +38,5 @@ export class Room {
 	}
 
 	public getRecentChat(N: number = 100) { return this.messages.slice(-N) }
+	public getData() { return this.data }
 }
