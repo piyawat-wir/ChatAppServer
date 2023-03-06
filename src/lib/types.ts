@@ -29,7 +29,7 @@ export interface SessionCookieData {
 
 export type datetime = ReturnType<typeof Date.now>
 
-export type UserRegisterData = {
+export interface UserRegisterData {
 	name: string;
 	profilePicture: string;
 	roomcode?: string,
