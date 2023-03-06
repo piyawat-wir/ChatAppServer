@@ -32,4 +32,5 @@ export type datetime = ReturnType<typeof Date.now>
 export type UserRegisterData = {
 	name: string;
 	profilePicture: string;
+	roomcode?: string,
 }
