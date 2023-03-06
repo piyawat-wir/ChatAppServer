@@ -19,6 +19,12 @@ export class SessionData implements SessionCookieData {
 	public get socketid() { return this.socket?.id }
 	public getSocket() { return this.socket }
 	public setSocket(socket: Socket) { this.socket = socket }
+	public getData = () => ({
+		createTime: this.createTime,
+		id: this.id,
+		roomcode: this.roomcode,
+		sessionLifetime: this.sessionLifetime,
+	})
 }
 
 type userid = SessionCookieData['id']
