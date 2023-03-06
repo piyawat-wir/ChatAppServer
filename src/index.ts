@@ -3,7 +3,7 @@ import http from 'http'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { Response as ExpressResponse } from 'express'
-import { Server as SocketServer } from 'socket.io'
+import { Server as SocketServer, Socket } from 'socket.io'
 import { AppServerSocket, ErrorCode, SessionCookieData, UserRegisterData } from './lib/types'
 import { SessionData, SessionStore } from './lib/sessions'
 import { Room, RoomData } from './lib/room'
@@ -63,7 +63,7 @@ app.post('/session', async (req: AppRequest, res) => {
 	if (!data) return errorNotFound(res);
 
 	data.renew();
-	res.json(data);
+	res.json(data.getData());
 })
 app.post('/session/create', async (req, res) => {
 	let id: string;
@@ -107,14 +107,14 @@ app.post('/user/create', async (req: AppRequest, res) => { // create/update user
 	if (user) {
 		user.name = name;
 		user.profilePicture = profilePicture;
-		Log.api(`user[${sessionStore.data.size}] update`, id)
+		Log.api(`user[${memory.usize}] update`, id)
 		return res.json(user.getData());
 	}
 
 	const newUser = new User(id, name)
 	newUser.profilePicture = profilePicture;
 	memory.addUser(newUser);
-	Log.api(`user[${sessionStore.data.size}] add`, id)
+	Log.api(`user[${memory.usize}] add`, id)
 	res.json(newUser.getData())
 
 	let roomcode: string;
@@ -125,6 +125,11 @@ app.post('/user/create', async (req: AppRequest, res) => { // create/update user
 	const newRoom = new Room(roomcode);
 	memory.addRoom(newRoom);
 	newUser.join(newRoom);
+	Log.api(`room[${memory.rsize}] add`, id)
+
+
+	const session = sessionStore.get(id);
+	if (session) session.roomcode = roomcode;
 })
 app.post('/user/delete', async (req: AppRequest, res) => { // delete user
 	if (!req.session) return errorNoAuth(res);
@@ -181,7 +186,11 @@ io.on('connection', (socket: AppServerSocket) => {
 	}
 
 	const data = sessionStore.get(session.id);
-	if (!data) throw ErrorCode.InvalidCredential;
+	if (!data) {
+		socket.emit('error', { message: ErrorCode.InvalidCredential.message });
+		socket.disconnect();
+		return;
+	}
 
 	const otherSocket = data.getSocket();
 	if (otherSocket) {
