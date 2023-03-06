@@ -33,6 +33,7 @@ export class User {
 	public getSocket() { return this.socket }
 	public setSocket(socket: Socket) { this.socket = socket }
 	public getData() { return this.data }
+	public getRoom() { return this.room }
 
 	public join(room: Room) {
 		if (this.room) {
