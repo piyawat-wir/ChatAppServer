@@ -97,13 +97,15 @@ app.post('/user', async (req: AppRequest, res) => { // get user data
 })
 app.post('/user/create', async (req: AppRequest, res) => { // create/update user
 	if (!req.session) return errorNoAuth(res);
-	if (!sessionStore.has(req.session.id)) return errorNoAuth(res);
-	if (!req.body.data) return errorBadRequest(res);
 
-	const { name, profilePicture } = req.body.data as UserRegisterData
 	const id = req.session.id;
-	const user = memory.user(id);
+	const session = sessionStore.get(id);
+	if (!session) return errorNoAuth(res);
+	
+	if (!req.body.data) return errorBadRequest(res);
+	const { name, profilePicture, roomcode } = req.body.data as UserRegisterData
 
+	const user = memory.user(id);
 	if (user) {
 		user.name = name;
 		user.profilePicture = profilePicture;
@@ -113,23 +115,31 @@ app.post('/user/create', async (req: AppRequest, res) => { // create/update user
 
 	const newUser = new User(id, name)
 	newUser.profilePicture = profilePicture;
+
+	if (roomcode) {
+		const room = memory.room(roomcode);
+		if (!room) return errorNotFound(res);
+
+		room.addUser(newUser);
+		session.roomcode = roomcode;
+	} else {
+		let newroomcode: string;
+		while (true) {
+			newroomcode = generateID(10);
+			if (!memory.room(newroomcode)) break;
+		}
+		
+		const newRoom = new Room(newroomcode);
+		newRoom.addUser(newUser);
+		memory.addRoom(newRoom);
+		session.roomcode = newroomcode;
+		Log.api(`room[${memory.rsize}] add`, newroomcode)
+		Log.api(`room ${newroomcode} ${Object.fromEntries(newRoom.getUsers())}`, id)
+	}
+
 	memory.addUser(newUser);
 	Log.api(`user[${memory.usize}] add`, id)
 	res.json(newUser.getData())
-
-	let roomcode: string;
-	while (true) {
-		roomcode = generateID(10);
-		if (!memory.room(roomcode)) break;
-	}
-	const newRoom = new Room(roomcode);
-	memory.addRoom(newRoom);
-	newUser.join(newRoom);
-	Log.api(`room[${memory.rsize}] add`, id)
-
-
-	const session = sessionStore.get(id);
-	if (session) session.roomcode = roomcode;
 })
 app.post('/user/delete', async (req: AppRequest, res) => { // delete user
 	if (!req.session) return errorNoAuth(res);
@@ -156,6 +166,16 @@ app.post('/room', async (req: AppRequest, res) => { // get room data
 	if (!room) return errorNotFound(res);
 
 	res.json(room.getData());
+})
+app.post('/room/:roomcode', async (req: AppRequest, res) => { // join room
+	if (!req.session) return errorNoAuth(res);
+
+	const roomcode = req.params.roomcode;
+
+	// TODO: room exists -> join room & return ok
+	// TODO: else -> return not found
+
+	res.send('join room ' + roomcode);
 })
 app.post('/room/update', async (req: AppRequest, res) => { // update room
 	if (!req.session) return errorNoAuth(res);
@@ -205,6 +225,10 @@ io.on('connection', (socket: AppServerSocket) => {
 		Log.socket(`${session.id}//${socket.id}: hello!`);
 		socket.emit('replyhello');
 	})
+
+	// TODO: socket listeners
+	// TODO:	- send/receive messages
+	// TODO:	- get chat log
 
 })
 
