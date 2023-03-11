@@ -2,16 +2,25 @@ import express from 'express'
 import http from 'http'
 import cors from 'cors'
 import dotenv from 'dotenv'
-import { Server as SocketServer, Socket } from 'socket.io'
-import { AppServerSocket, ErrorCode, SessionCookieData, UserRegisterData } from './lib/types'
-import { SessionData, SessionStore } from './lib/sessions'
-import { Room, RoomData } from './lib/room'
-import { User } from './lib/user'
-import { Log } from './lib/logger'
-import { generateID } from './lib'
-import { AppRequest, expressMiddleware, socketMiddleware } from './middleware'
-import { Memory } from './memory'
-import { errorNoAuth, errorNotFound, errorBadRequest } from './lib/error'
+import { Server as SocketServer } from 'socket.io'
+import { AppServerSocket, ErrorCode, SessionCookieData } from '@/lib/types'
+import { SessionStore } from '@/lib/sessions'
+import { expressMiddleware, socketMiddleware } from '@/middleware'
+import { Memory } from '@/memory'
+import { cleanRemoveUser } from '@/lib/index.js'
+import { Log } from '@/lib/logger'
+
+import sessionHandler from '@/handler/express/session'
+import sessionCreateHandler from '@/handler/express/session/create'
+import sessionDeleteHandler from '@/handler/express/session/delete'
+
+import userHandler from '@/handler/express/user'
+import userCreateHandler from '@/handler/express/user/create'
+import userDeleteHandler from '@/handler/express/user/delete'
+
+import roomHandler from '@/handler/express/room'
+import roomJoinHandler from '@/handler/express/room/join'
+import roomUpdateHandler from '@/handler/express/room/update'
 
 dotenv.config();
 
@@ -41,157 +50,17 @@ app.use(express.json());
 app.use(expressMiddleware(JWT_TOKEN_KEY));
 io.use(socketMiddleware(JWT_TOKEN_KEY));
 
-const cleanRemoveUser = (id: string) => {
-	const session = sessionStore.get(id);
-	if (!session) return;
-	const room = memory.room(session.roomcode);
-	const user = memory.user(id);
-	if (room && user) room.removeUser(user);
+app.post('/session', sessionHandler(sessionStore, memory))
+app.post('/session/create', sessionCreateHandler(sessionStore, memory))
+app.post('/session/delete', sessionDeleteHandler(sessionStore, memory))
 
-	session.roomcode = '';
-	memory.removeUser(id);
-}
+app.post('/user', userHandler(sessionStore, memory))
+app.post('/user/create', userCreateHandler(sessionStore, memory))
+app.post('/user/delete', userDeleteHandler(sessionStore, memory))
 
-app.post('/session', async (req: AppRequest, res) => {
-	if (!req.session) return errorNoAuth(res);
-
-	const data = sessionStore.get(req.session.id);
-	if (!data) return errorNotFound(res);
-
-	data.renew();
-	res.json(data.getData());
-})
-app.post('/session/create', async (req, res) => {
-	let id: string;
-	while (true) {
-		id = generateID(10);
-		if (!sessionStore.has(id)) break;
-	}
-	const session = new SessionData(id);
-	sessionStore.add(session);
-	Log.api(`session[${sessionStore.data.size}] add`, session.id);
-	res.json(session)
-})
-app.post('/session/delete', async (req: AppRequest, res) => {
-	if (!req.session) return errorNoAuth(res);
-	const id = req.session.id;
-
-	cleanRemoveUser(id);
-	sessionStore.delete(id);
-	Log.api(`user[${memory.usize}] delete`, id);
-	Log.api(`session[${sessionStore.data.size}] delete`, id);
-	res.sendStatus(200);
-})
-
-app.post('/user', async (req: AppRequest, res) => { // get user data
-	if (!req.session) return errorNoAuth(res);
-
-	const user = memory.user(req.session.id);
-	if (!user) return errorNotFound(res);
-
-	res.json(user.getData());
-})
-app.post('/user/create', async (req: AppRequest, res) => { // create/update user
-	if (!req.session) return errorNoAuth(res);
-
-	const id = req.session.id;
-	const session = sessionStore.get(id);
-	if (!session) return errorNoAuth(res);
-
-	if (!req.body.data) return errorBadRequest(res);
-	const { name, profilePicture, roomcode } = req.body.data as UserRegisterData
-
-	const user = memory.user(id);
-	if (user) {
-		user.name = name;
-		user.profilePicture = profilePicture;
-		Log.api(`user[${memory.usize}] update`, id)
-		return res.json(user.getData());
-	}
-
-	const newUser = new User(id, name)
-	newUser.profilePicture = profilePicture;
-
-	if (roomcode) {
-		const room = memory.room(roomcode);
-		if (!room) return errorNotFound(res);
-
-		room.addUser(newUser);
-		session.roomcode = roomcode;
-	} else {
-		let newroomcode: string;
-		while (true) {
-			newroomcode = generateID(10);
-			if (!memory.room(newroomcode)) break;
-		}
-
-		const newRoom = new Room(newroomcode);
-		newRoom.addUser(newUser);
-		memory.addRoom(newRoom);
-		session.roomcode = newroomcode;
-		Log.api(`room[${memory.rsize}] add`, newroomcode)
-		Log.api(`room ${newroomcode} ${Object.fromEntries(newRoom.getUsers())}`, id)
-	}
-
-	memory.addUser(newUser);
-	Log.api(`user[${memory.usize}] add`, id)
-	res.json(newUser.getData())
-})
-app.post('/user/delete', async (req: AppRequest, res) => { // delete user
-	if (!req.session) return errorNoAuth(res);
-
-	const id = req.session.id;
-	const session = sessionStore.get(id);
-
-	if (!session) return errorNoAuth(res);
-
-	cleanRemoveUser(id);
-	Log.api(`user[${memory.usize}] delete`, id);
-	res.sendStatus(200)
-})
-
-app.post('/room', async (req: AppRequest, res) => { // get room data
-	if (!req.session) return errorNoAuth(res);
-
-	const id = req.session.id;
-	const session = sessionStore.get(id);
-
-	if (!session) return errorNoAuth(res);
-
-	const room = memory.room(session.roomcode);
-	if (!room) return errorNotFound(res);
-
-	res.json(room.getData());
-})
-app.post('/room/:roomcode', async (req: AppRequest, res) => { // join room
-	if (!req.session) return errorNoAuth(res);
-
-	const roomcode = req.params.roomcode;
-
-	// TODO: room exists -> join room & return ok
-	// TODO: else -> return not found
-
-	res.send('join room ' + roomcode);
-})
-app.post('/room/update', async (req: AppRequest, res) => { // update room
-	if (!req.session) return errorNoAuth(res);
-
-	const id = req.session.id;
-	const session = sessionStore.get(id);
-
-	if (!session) return errorNoAuth(res);
-
-	const room = memory.room(session.roomcode);
-	if (!room) return errorNotFound(res);
-
-	if (!req.body.data) return errorBadRequest(res);
-	const { name, description } = req.body.data as RoomData;
-
-	room.name = name;
-	room.description = description;
-
-	res.json(room.getData());
-})
+app.post('/room', roomHandler(sessionStore, memory))
+app.post('/room/:roomcode', roomJoinHandler(sessionStore, memory))
+app.post('/room/update', roomUpdateHandler(sessionStore, memory))
 
 io.on('connection', (socket: AppServerSocket) => {
 
@@ -241,7 +110,7 @@ server.listen(PORT, () => {
 	console.clear()
 	Log.server(`Started running at localhost:${PORT}`);
 	sessionStore.startPruneService(id => {
-		cleanRemoveUser(id);
+		cleanRemoveUser(id, sessionStore, memory);
 	});
 	Log.server(sessionStore.data);
 })
