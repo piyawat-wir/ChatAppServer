@@ -42,7 +42,9 @@ export class Room {
 	public getUsers() { return this.users }
 
 	public sendMessage(user: User, message: string) {
-		this.messages.push(new TextMessage(user, message))
+		const msg = new TextMessage(user, message);
+		this.messages.push(msg)
+		return msg;
 	}
 
 	public getRecentChat(N: number = 100) { return this.messages.slice(-N) }
