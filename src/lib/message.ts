@@ -7,7 +7,9 @@ export enum MessageType {
 
 export abstract class Message {
 	public id: number
-	public userid: UserData['id']
+	public userid: User['id']
+	public username: string
+	public profilePicture: string
 	public abstract type: MessageType
 	public data: any
 	public time: datetime
@@ -15,6 +17,8 @@ export abstract class Message {
 		const createTime = Date.now();
 		this.id = createTime;
 		this.userid = user.id;
+		this.username = user.name;
+		this.profilePicture = user.profilePicture;
 		this.data = data;
 		this.time = createTime;
 	}
