@@ -6,6 +6,9 @@ export class Memory {
 	private users = new Map<string, User>();
 	private rooms = new Map<string, Room>();
 
+	public get usize() { return this.users.size } 
+	public get rsize() { return this.rooms.size } 
+
 	public room(roomcode: string) { return this.rooms.get(roomcode) }
 	public user(id: string) { return this.users.get(id) }
 
