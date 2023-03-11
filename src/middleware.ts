@@ -1,16 +1,9 @@
 import { ExtendedError } from "socket.io/dist/namespace";
-import { AppServerSocket, ErrorCode, SessionCookieData } from "./lib/types";
+import { AppRequest, AppServerSocket, ErrorCode, SessionCookieData } from "./lib/types";
 import Log from "./lib/logger";
 import jwt from 'jsonwebtoken'
-import { RequestHandler, Request } from 'express'
+import { RequestHandler } from 'express'
 
-export interface AppRequest extends Request {
-	body: {
-		auth: string
-		data?: Record<string, any>
-	},
-	session?: SessionCookieData
-}
 
 interface ValidationParameter {
 	token?: string

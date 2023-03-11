@@ -2,6 +2,7 @@ import { IncomingMessage } from "http"
 import { Socket } from "socket.io"
 import { ExtendedError } from "socket.io/dist/namespace"
 import { Handshake } from "socket.io/dist/socket"
+import { Request, Response } from 'express'
 
 enum ErrorMessage {
 	InvalidCredential = "InvalidCredential"
@@ -22,6 +23,16 @@ export interface AppServerSocket extends Socket {
 
 	}
 }
+
+export interface AppRequest extends Request {
+	body: {
+		auth: string
+		data?: Record<string, any>
+	},
+	session?: SessionCookieData
+}
+
+export interface AppResponse extends Response {}
 
 export interface SessionCookieData {
 	id: string
