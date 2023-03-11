@@ -1,6 +1,5 @@
 import { Socket } from "socket.io"
-import { generateID } from "."
-import { Room } from "./room"
+import { Room } from "@/lib/room"
 
 export interface UserData {
 	id: string

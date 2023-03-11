@@ -1,6 +1,6 @@
 import { Socket } from "socket.io";
-import Log from "./logger";
-import { datetime, SessionCookieData } from "./types";
+import Log from "@/lib/logger";
+import { datetime, SessionCookieData } from "@/lib/types";
 
 export class SessionData implements SessionCookieData {
 	public createTime: datetime = Date.now();

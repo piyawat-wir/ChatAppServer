@@ -1,5 +1,5 @@
-import { Room } from "./lib/room";
-import { User } from "./lib/user";
+import { Room } from "@/lib/room";
+import { User } from "@/lib/user";
 
 export class Memory {
 

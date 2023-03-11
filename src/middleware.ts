@@ -1,6 +1,6 @@
 import { ExtendedError } from "socket.io/dist/namespace";
-import { AppRequest, AppServerSocket, ErrorCode, SessionCookieData } from "./lib/types";
-import Log from "./lib/logger";
+import { AppRequest, AppServerSocket, ErrorCode, SessionCookieData } from "@/lib/types";
+import Log from "@/lib/logger";
 import jwt from 'jsonwebtoken'
 import { RequestHandler } from 'express'
 

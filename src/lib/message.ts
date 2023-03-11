@@ -1,5 +1,5 @@
-import { datetime } from "./types"
-import { User, UserData } from "./user"
+import { datetime } from "@/lib/types"
+import { User, UserData } from "@/lib/user"
 
 export enum MessageType {
 	Text = 'text'

@@ -1,6 +1,5 @@
-import { generateID } from "."
-import { Message, TextMessage } from "./message"
-import { User } from "./user"
+import { Message, TextMessage } from "@/lib/message"
+import { User } from "@/lib/user"
 
 export interface RoomData {
 	roomcode: string
