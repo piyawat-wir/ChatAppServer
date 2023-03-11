@@ -101,7 +101,7 @@ app.post('/user/create', async (req: AppRequest, res) => { // create/update user
 	const id = req.session.id;
 	const session = sessionStore.get(id);
 	if (!session) return errorNoAuth(res);
-	
+
 	if (!req.body.data) return errorBadRequest(res);
 	const { name, profilePicture, roomcode } = req.body.data as UserRegisterData
 
@@ -128,7 +128,7 @@ app.post('/user/create', async (req: AppRequest, res) => { // create/update user
 			newroomcode = generateID(10);
 			if (!memory.room(newroomcode)) break;
 		}
-		
+
 		const newRoom = new Room(newroomcode);
 		newRoom.addUser(newUser);
 		memory.addRoom(newRoom);
@@ -199,37 +199,46 @@ app.post('/room/update', async (req: AppRequest, res) => { // update room
 
 io.on('connection', (socket: AppServerSocket) => {
 
-	const session = socket.request.session as SessionCookieData;
+	const sessionCookie = socket.request.session as SessionCookieData;
+	const { id } = sessionCookie;
 
 	if (socket.recovered) {
-		Log.socket(`userid ${session.id}//${socket.id} is reconnected`);
+		Log.socket(`userid ${id}//${socket.id} is reconnected`);
 	}
 
-	const data = sessionStore.get(session.id);
-	if (!data) {
+	// Has session authenticated?
+	const session = sessionStore.get(id);
+	if (!session) {
 		socket.emit('error', { message: ErrorCode.InvalidCredential.message });
 		socket.disconnect();
 		return;
 	}
 
-	const otherSocket = data.getSocket();
+	// Multiple socket with same ID blocker
+	const otherSocket = session.getSocket();
 	if (otherSocket) {
 		otherSocket.disconnect();
-		Log.socket(`disconnected: ${session.id}//${otherSocket.id}`)
+		Log.socket(`disconnected: ${id}//${otherSocket.id}`)
 	}
-	data.setSocket(socket);
+	session.setSocket(socket);
 
-	Log.socket(`userid ${session.id}//${socket.id} is connected`);
+	const { roomcode } = session;
+	socket.join(roomcode)
 
-	socket.on('hello', data => {
-		Log.socket(`${session.id}//${socket.id}: hello!`);
-		socket.emit('replyhello');
-	})
+	Log.socket(`userid ${id}//${socket.id} is connected`);
 
-	// TODO: socket listeners
-	// TODO:	- send/receive messages
-	// TODO:	- get chat log
+	const user = memory.user(id);
+	if (!user) return socket.emit('error', { message: "Internal Server Error" });
 
+	// Send message event
+	socket.on('send_message', (data: string) => {
+		const msg = user.sendMessage(data);
+		if (!msg) return;
+		io.in(roomcode).emit('other_sent', msg);
+	});
+
+	// Send current chat log in the room
+	socket.emit('chat_log', user.getRoom()?.getRecentChat() || [])
 })
 
 server.listen(PORT, () => {
