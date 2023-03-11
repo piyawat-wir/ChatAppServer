@@ -4,23 +4,12 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import { Server as SocketServer } from 'socket.io'
 import { AppServerSocket, ErrorCode, SessionCookieData } from '@/lib/types'
-import { SessionStore } from '@/lib/sessions'
 import { expressMiddleware, socketMiddleware } from '@/middleware'
-import { Memory } from '@/memory'
+import { SessionStore } from '@/lib/sessions'
+import { sessionHandler, userHandler, roomHandler } from '@/handler'
 import { cleanRemoveUser } from '@/lib/index.js'
+import { Memory } from '@/memory'
 import { Log } from '@/lib/logger'
-
-import sessionHandler from '@/handler/express/session'
-import sessionCreateHandler from '@/handler/express/session/create'
-import sessionDeleteHandler from '@/handler/express/session/delete'
-
-import userHandler from '@/handler/express/user'
-import userCreateHandler from '@/handler/express/user/create'
-import userDeleteHandler from '@/handler/express/user/delete'
-
-import roomHandler from '@/handler/express/room'
-import roomJoinHandler from '@/handler/express/room/join'
-import roomUpdateHandler from '@/handler/express/room/update'
 
 dotenv.config();
 
@@ -50,17 +39,17 @@ app.use(express.json());
 app.use(expressMiddleware(JWT_TOKEN_KEY));
 io.use(socketMiddleware(JWT_TOKEN_KEY));
 
-app.post('/session', sessionHandler(sessionStore, memory))
-app.post('/session/create', sessionCreateHandler(sessionStore, memory))
-app.post('/session/delete', sessionDeleteHandler(sessionStore, memory))
+app.post('/session', sessionHandler.get(sessionStore, memory))
+app.post('/session/create', sessionHandler.create(sessionStore, memory))
+app.post('/session/delete', sessionHandler.delete(sessionStore, memory))
 
-app.post('/user', userHandler(sessionStore, memory))
-app.post('/user/create', userCreateHandler(sessionStore, memory))
-app.post('/user/delete', userDeleteHandler(sessionStore, memory))
+app.post('/user', userHandler.get(sessionStore, memory))
+app.post('/user/create', userHandler.create(sessionStore, memory))
+app.post('/user/delete', userHandler.delete(sessionStore, memory))
 
-app.post('/room', roomHandler(sessionStore, memory))
-app.post('/room/:roomcode', roomJoinHandler(sessionStore, memory))
-app.post('/room/update', roomUpdateHandler(sessionStore, memory))
+app.post('/room', roomHandler.get(sessionStore, memory))
+app.post('/room/:roomcode', roomHandler.join(sessionStore, memory))
+app.post('/room/update', roomHandler.update(sessionStore, memory))
 
 io.on('connection', (socket: AppServerSocket) => {
 
