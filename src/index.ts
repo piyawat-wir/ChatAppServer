@@ -2,7 +2,6 @@ import express from 'express'
 import http from 'http'
 import cors from 'cors'
 import dotenv from 'dotenv'
-import { Response as ExpressResponse } from 'express'
 import { Server as SocketServer, Socket } from 'socket.io'
 import { AppServerSocket, ErrorCode, SessionCookieData, UserRegisterData } from './lib/types'
 import { SessionData, SessionStore } from './lib/sessions'
@@ -12,6 +11,7 @@ import { Log } from './lib/logger'
 import { generateID } from './lib'
 import { AppRequest, expressMiddleware, socketMiddleware } from './middleware'
 import { Memory } from './memory'
+import { errorNoAuth, errorNotFound, errorBadRequest } from './lib/error'
 
 dotenv.config();
 
@@ -40,10 +40,6 @@ app.use(cors(corsConfig));
 app.use(express.json());
 app.use(expressMiddleware(JWT_TOKEN_KEY));
 io.use(socketMiddleware(JWT_TOKEN_KEY));
-
-const errorNoAuth = (res: ExpressResponse) => res.status(401).send('')
-const errorNotFound = (res: ExpressResponse) => res.status(404).send('')
-const errorBadRequest = (res: ExpressResponse) => res.status(400).send('')
 
 const cleanRemoveUser = (id: string) => {
 	const session = sessionStore.get(id);
