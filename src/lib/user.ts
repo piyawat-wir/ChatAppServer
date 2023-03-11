@@ -50,6 +50,6 @@ export class User {
 			oldRoom.removeUser(this);
 	}
 	public sendMessage(message: string) {
-		this.room?.sendMessage(this, message);
+		return this.room?.sendMessage(this, message);
 	}
 }
